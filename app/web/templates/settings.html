@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}Sozlamalar | AI Email Agent{% endblock %}
+
+{% block content %}
+<div class="flex-1 overflow-y-auto p-8 max-w-4xl mx-auto w-full space-y-8">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-100 flex items-center gap-2.5">
+            <i class="fa-solid fa-sliders text-indigo-400"></i>
+            Agent Sozlamalari & Xotirasi (User Preference Memory)
+        </h1>
+        <p class="text-sm text-slate-400 mt-1">
+            AI Agent sizning uslubingiz, tilingiz va javob berish qoidalaringizni eslab qoladi va har bir draftda qo'llaydi.
+        </p>
+    </div>
+
+    <!-- Preferences Form -->
+    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+        <form id="settingsForm" onsubmit="savePreferences(event)" class="space-y-6">
+            <!-- Tone -->
+            <div>
+                <label class="block text-sm font-semibold text-slate-200 mb-2">
+                    👔 Standart Javob Toni (Default Reply Tone)
+                </label>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <label class="cursor-pointer border border-slate-800 rounded-xl p-3 bg-slate-950/60 hover:border-indigo-500/50 flex flex-col items-center text-center transition-all">
+                        <input type="radio" name="tone" value="Professional" {% if not user.preferences or user.preferences.preferred_tone.value == 'Professional' %}checked{% endif %} class="mb-2 text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-xs font-bold text-slate-200">Professional</span>
+                        <span class="text-[10px] text-slate-400 mt-0.5">Rasmiy va biznes uslub</span>
+                    </label>
+
+                    <label class="cursor-pointer border border-slate-800 rounded-xl p-3 bg-slate-950/60 hover:border-indigo-500/50 flex flex-col items-center text-center transition-all">
+                        <input type="radio" name="tone" value="Friendly" {% if user.preferences and user.preferences.preferred_tone.value == 'Friendly' %}checked{% endif %} class="mb-2 text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-xs font-bold text-slate-200">Do'stona</span>
+                        <span class="text-[10px] text-slate-400 mt-0.5">Samimiy va iliq</span>
+                    </label>
+
+                    <label class="cursor-pointer border border-slate-800 rounded-xl p-3 bg-slate-950/60 hover:border-indigo-500/50 flex flex-col items-center text-center transition-all">
+                        <input type="radio" name="tone" value="Short" {% if user.preferences and user.preferences.preferred_tone.value == 'Short' %}checked{% endif %} class="mb-2 text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-xs font-bold text-slate-200">Qisqa (Short)</span>
+                        <span class="text-[10px] text-slate-400 mt-0.5">1-2 jumlali lo'nda</span>
+                    </label>
+
+                    <label class="cursor-pointer border border-slate-800 rounded-xl p-3 bg-slate-950/60 hover:border-indigo-500/50 flex flex-col items-center text-center transition-all">
+                        <input type="radio" name="tone" value="Detailed" {% if user.preferences and user.preferences.preferred_tone.value == 'Detailed' %}checked{% endif %} class="mb-2 text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-xs font-bold text-slate-200">Batafsil</span>
+                        <span class="text-[10px] text-slate-400 mt-0.5">Qadam-baqadam to'liq</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Language & Summary Bullets -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-200 mb-1.5">Muloqot Tili</label>
+                    <select id="prefLang" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="Uzbek" {% if not user.preferences or user.preferences.preferred_language == 'Uzbek' %}selected{% endif %}>🇺🇿 O'zbek tili</option>
+                        <option value="English" {% if user.preferences and user.preferences.preferred_language == 'English' %}selected{% endif %}>🇬🇧 English</option>
+                        <option value="Russian" {% if user.preferences and user.preferences.preferred_language == 'Russian' %}selected{% endif %}>🇷🇺 Русский</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-200 mb-1.5">AI Xulosa punktlari soni</label>
+                    <select id="prefBullets" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="3" {% if user.preferences and user.preferences.max_summary_bullets == 3 %}selected{% endif %}>3 ta punkt</option>
+                        <option value="4" {% if not user.preferences or user.preferences.max_summary_bullets == 4 %}selected{% endif %}>4 ta punkt (Standart)</option>
+                        <option value="5" {% if user.preferences and user.preferences.max_summary_bullets == 5 %}selected{% endif %}>5 ta punkt</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Custom User Instructions -->
+            <div>
+                <label class="block text-sm font-semibold text-slate-200 mb-1.5">
+                    🧠 Foydalanuvchi Maxsus Ko'rsatmalari (Custom Memory Prompt)
+                </label>
+                <textarea 
+                    id="prefCustom" 
+                    rows="3" 
+                    class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none leading-relaxed"
+                    placeholder="Masalan: Javoblarda doimo 'Hurmat bilan' deb yozilsin. Hafta oxirlariga hech qanday uchrashuv belgilanmasin..."
+                >{{ user.preferences.custom_instructions if user.preferences else 'Javoblar lo\'nda, xushmuomala va professional bo\'lsin.' }}</textarea>
+                <p class="text-[11px] text-slate-400 mt-1">Ushbu ko'rsatma AI javob tayyorlayotganda uning xotirasida doimiy inobatga olinadi.</p>
+            </div>
+
+            <!-- Email Signature -->
+            <div>
+                <label class="block text-sm font-semibold text-slate-200 mb-1.5">
+                    ✍️ Email Imzosi (Email Signature)
+                </label>
+                <input 
+                    type="text" 
+                    id="prefSignature" 
+                    value="{{ user.preferences.signature if (user.preferences and user.preferences.signature) else 'Hurmat bilan,\nAI Email Agent' }}" 
+                    class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    placeholder="Masalan: Hurmat bilan, Sizning Ismingiz"
+                >
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex items-center justify-end pt-3 border-t border-slate-800">
+                <button type="submit" id="savePrefBtn" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/25 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <span>Sozlamalarni Saqlash</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Connected Accounts Card -->
+    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-at"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-slate-100">Ulangan Email Akkauntlar</h3>
+                    <p class="text-xs text-slate-400">AI Agent boshqarayotgan pochtalar ro'yxati</p>
+                </div>
+            </div>
+            <a href="/" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all">
+                <i class="fa-solid fa-plus"></i> Yangi Email Ulash
+            </a>
+        </div>
+
+        <div id="settingsAccountsList" class="space-y-2 text-xs">
+            <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span class="font-semibold text-slate-200">agent.workspace@gmail.com</span>
+                    <span class="px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-400 text-[10px]">Asosiy</span>
+                </div>
+                <span class="text-slate-500">Faol</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Telegram Bot Link Card -->
+    <div class="bg-gradient-to-r from-sky-950/40 to-slate-900/60 border border-sky-500/30 rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center text-xl">
+                <i class="fa-brands fa-telegram"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-bold text-slate-100">Telegram Bot Integratsiyasi</h3>
+                <p class="text-xs text-slate-400">Pochtangizni to'g'ridan-to'g'ri Telegram orqali boshqaring va shoshilinch bildirishnomalarni oling.</p>
+            </div>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2 text-xs">
+            <p class="text-slate-300 font-semibold">Qanday ulash mumkin:</p>
+            <ol class="list-decimal list-inside space-y-1 text-slate-400">
+                <li>Telegram'da <b>@{{ settings.TELEGRAM_BOT_USERNAME or 'YourEmailAgentBot' }}</b> botiga kiring.</li>
+                <li><code>/start</code> buyrug'ini yuboring.</li>
+                <li>Bot sizning akkauntingizni avtomatik taniydi va pochtangizni ulashadi.</li>
+            </ol>
+        </div>
+
+        <div class="flex items-center justify-between pt-2">
+            <span class="text-xs text-slate-400">Holat: {% if user.telegram_chat_id %}<span class="text-emerald-400 font-semibold">✅ Ulangan (ID: {{ user.telegram_chat_id }})</span>{% else %}<span class="text-amber-400 font-semibold">⏳ Hali ulanmagan</span>{% endif %}</span>
+            <a 
+                href="https://t.me/{{ settings.TELEGRAM_BOT_USERNAME or 'YourEmailAgentBot' }}" 
+                target="_blank"
+                class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-lg shadow-sky-600/20 transition-all"
+            >
+                <i class="fa-brands fa-telegram"></i>
+                <span>Botga O'tish</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        loadSettingsAccounts();
+    });
+
+    async function loadSettingsAccounts() {
+        try {
+            const res = await fetch('/api/accounts');
+            const accounts = await res.json();
+            const container = document.getElementById('settingsAccountsList');
+            if (!accounts || accounts.length === 0) {
+                container.innerHTML = `<div class="p-3 text-slate-500 italic">Ulangan hisoblar mavjud emas.</div>`;
+                return;
+            }
+            container.innerHTML = accounts.map(a => `
+                <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-2 h-2 rounded-full ${a.is_active ? 'bg-emerald-400' : 'bg-slate-500'}"></span>
+                        <span class="font-semibold text-slate-200">${a.email_address}</span>
+                        <span class="text-slate-500 text-[10px] hidden sm:inline">(${a.imap_host})</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-[11px] text-slate-400">${a.last_synced_at}</span>
+                        ${a.password !== 'app_password_mock' ? `
+                            <button onclick="deleteAccount(${a.id})" class="text-rose-400 hover:text-rose-300 text-xs p-1" title="O'chirish">
+                                <i class="fa-regular fa-trash-can"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function deleteAccount(id) {
+        if (!confirm('Haqiqatan ham ushbu hisobni o\'chirmoqchimisiz?')) return;
+        try {
+            const res = await fetch(`/api/accounts/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                showToast('Akkaunt o\'chirildi', 'info');
+                loadSettingsAccounts();
+            }
+        } catch (e) {
+            showToast('O\'chirishda xatolik', 'error');
+        }
+    }
+
+    async function savePreferences(e) {
+        e.preventDefault();
+        const btn = document.getElementById('savePrefBtn');
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saqlanmoqda...`;
+
+        const tone = document.querySelector('input[name="tone"]:checked').value;
+        const payload = {
+            preferred_tone: tone,
+            preferred_language: document.getElementById('prefLang').value,
+            max_summary_bullets: parseInt(document.getElementById('prefBullets').value),
+            custom_instructions: document.getElementById('prefCustom').value,
+            signature: document.getElementById('prefSignature').value
+        };
+
+        try {
+            const res = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            showToast(data.message, 'success');
+        } catch (err) {
+            showToast('Sozlamalarni saqlashda xatolik', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> <span>Sozlamalarni Saqlash</span>`;
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,1416 @@
+{% extends "base.html" %}
+
+{% block title %}Pochta Paneli | AI Email Agent{% endblock %}
+
+{% block content %}
+<div class="flex-1 flex w-full h-[calc(100vh-61px)] overflow-hidden bg-[#0b0f19]">
+    <!-- Left Sidebar: Folders & Categories -->
+    <aside class="w-64 border-r border-slate-800/80 bg-slate-900/40 p-4 flex flex-col justify-between hidden lg:flex select-none">
+        <div class="space-y-5 overflow-y-auto pr-1">
+            <!-- Active Account Card -->
+            <div class="p-3 rounded-2xl bg-gradient-to-br from-slate-800/60 to-slate-900/80 border border-slate-700/60 shadow-md">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-600 text-white flex items-center justify-center font-bold text-sm shadow">
+                        <i class="fa-solid fa-at"></i>
+                    </div>
+                    <div class="overflow-hidden flex-1">
+                        <p id="sidebarAccountEmail" class="text-xs font-bold text-slate-100 truncate" title="{{ user.email or 'agent.workspace@gmail.com' }}">
+                            {{ user.email or 'agent.workspace@gmail.com' }}
+                        </p>
+                        <div class="flex items-center gap-1.5 mt-0.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot"></span>
+                            <span class="text-[10px] text-emerald-400 font-semibold uppercase tracking-wider">Faol / IMAP</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Folders / Categories Navigation -->
+            <div class="space-y-1">
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-2.5">Pochta Bo'limlari</p>
+                <nav class="space-y-1">
+                    <button onclick="setCategoryFilter('all', this)" class="category-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all bg-indigo-600/15 text-indigo-400 border border-indigo-500/30 shadow-sm">
+                        <span class="flex items-center gap-2.5">
+                            <i class="fa-solid fa-inbox text-indigo-400 text-sm"></i>
+                            <span>Barcha xatlar</span>
+                        </span>
+                        <span id="catCountAll" class="text-[11px] px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 font-bold">{{ stats.total }}</span>
+                    </button>
+
+                    <button onclick="setCategoryFilter('starred', this)" class="category-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all text-slate-300 hover:bg-slate-800/60 hover:text-white">
+                        <span class="flex items-center gap-2.5">
+                            <i class="fa-solid fa-star text-amber-400 text-sm"></i>
+                            <span>Saralanganlar</span>
+                        </span>
+                        <span id="catCountStarred" class="text-[11px] px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 font-semibold">0</span>
+                    </button>
+
+                    <button onclick="setCategoryFilter('Important', this)" class="category-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all text-slate-300 hover:bg-slate-800/60 hover:text-white">
+                        <span class="flex items-center gap-2.5">
+                            <i class="fa-solid fa-shield-halved text-rose-400 text-sm"></i>
+                            <span>Muhim (Important)</span>
+                        </span>
+                        <span class="text-[11px] px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 font-bold">{{ stats.urgent + stats.high }}</span>
+                    </button>
+
+                    <button onclick="setCategoryFilter('Work', this)" class="category-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all text-slate-300 hover:bg-slate-800/60 hover:text-white">
+                        <span class="flex items-center gap-2.5">
+                            <i class="fa-solid fa-briefcase text-blue-400 text-sm"></i>
+                            <span>Ish (Work)</span>
+                        </span>
+                        <span class="text-[11px] px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 font-semibold">{{ stats.work }}</span>
+                    </button>
+
+                    <button onclick="setCategoryFilter('Personal', this)" class="category-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all text-slate-300 hover:bg-slate-800/60 hover:text-white">
+                        <span class="flex items-center gap-2.5">
+                            <i class="fa-solid fa-user text-emerald-400 text-sm"></i>
+                            <span>Shaxsiy (Personal)</span>
+                        </span>
+                    </button>
+
+                    <button onclick="setCategoryFilter('Promotions', this)" class="category-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all text-slate-300 hover:bg-slate-800/60 hover:text-white">
+                        <span class="flex items-center gap-2.5">
+                            <i class="fa-solid fa-tag text-purple-400 text-sm"></i>
+                            <span>Aksiya & Chegirmalar</span>
+                        </span>
+                    </button>
+
+                    <button onclick="setCategoryFilter('Spam / Suspicious', this)" class="category-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all text-slate-300 hover:bg-slate-800/60 hover:text-white">
+                        <span class="flex items-center gap-2.5">
+                            <i class="fa-solid fa-triangle-exclamation text-amber-500 text-sm"></i>
+                            <span>Spam / Shubhali</span>
+                        </span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Follow-up Reminders Widget -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between px-2.5">
+                    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-regular fa-clock text-indigo-400"></i>
+                        <span>Eslatmalar</span>
+                    </p>
+                    <button onclick="openReminderModal()" class="w-5 h-5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-xs transition" title="Yangi eslatma qo'shish">
+                        <i class="fa-solid fa-plus text-[10px]"></i>
+                    </button>
+                </div>
+                <div id="sidebarReminders" class="space-y-1.5 text-xs">
+                    <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 text-slate-400 text-[11px] italic text-center">
+                        Faol eslatmalar mavjud emas
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Action Buttons -->
+        <div class="space-y-2 pt-4 border-t border-slate-800/80">
+            <button onclick="toggleAgentChat()" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition-all transform hover:-translate-y-0.5">
+                <i class="fa-solid fa-robot"></i>
+                <span>AI Action Copilot</span>
+            </button>
+            <button onclick="triggerManualSync()" class="w-full py-2 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 border border-slate-700/60 transition-colors">
+                <i id="sidebarSyncIcon" class="fa-solid fa-arrows-rotate text-emerald-400 text-xs"></i>
+                <span>Pochtani sinxronlash</span>
+            </button>
+            <button onclick="openConnectModal()" class="w-full py-2 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 border border-slate-700/60 transition-colors">
+                <i class="fa-solid fa-link text-indigo-400 text-xs"></i>
+                <span>Email ulash (IMAP)</span>
+            </button>
+            <button onclick="seedDemoEmails()" class="w-full py-2 px-3 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 text-xs font-semibold flex items-center justify-center gap-2 border border-indigo-500/25 transition-colors">
+                <i class="fa-solid fa-wand-magic-sparkles text-xs text-indigo-400"></i>
+                <span>Demo xabarlarni yuklash</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Center Pane: Email List -->
+    <section class="w-full lg:w-96 xl:w-[420px] border-r border-slate-800/80 flex flex-col bg-[#0b0f19]">
+        <!-- List Header Toolbar -->
+        <div class="p-3.5 border-b border-slate-800/80 space-y-3 bg-slate-900/30">
+            <div class="flex items-center justify-between">
+                <h2 id="currentCategoryTitle" class="font-extrabold text-sm text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-inbox text-indigo-400"></i>
+                    <span>Barcha xatlar</span>
+                </h2>
+                <div class="flex items-center gap-2">
+                    <span id="filteredCount" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700/60">6 ta xat</span>
+                </div>
+            </div>
+
+            <!-- Instant In-List Filter Search -->
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                <input 
+                    type="text" 
+                    id="liveFilterInput" 
+                    oninput="liveFilterEmails(this.value)"
+                    placeholder="Xat mavzusi yoki jo'natuvchi bo'yicha tezkor filter..." 
+                    class="w-full bg-slate-950/70 border border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                >
+            </div>
+
+            <!-- Priority Filter Badges -->
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs select-none">
+                <button onclick="setPriorityFilter('all', this)" class="priority-btn px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-semibold shadow-sm transition-all text-[11px]">Barchasi</button>
+                <button onclick="setPriorityFilter('Urgent', this)" class="priority-btn px-2 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-rose-300 font-medium transition-all flex items-center gap-1 text-[11px]">
+                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500 pulse-dot"></span>
+                    <span>Shoshilinch</span>
+                </button>
+                <button onclick="setPriorityFilter('High', this)" class="priority-btn px-2 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-amber-300 font-medium transition-all flex items-center gap-1 text-[11px]">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    <span>Yuqori</span>
+                </button>
+                <button onclick="setPriorityFilter('Normal', this)" class="priority-btn px-2 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-yellow-300 font-medium transition-all flex items-center gap-1 text-[11px]">
+                    <span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
+                    <span>Oddiy</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Emails Scrollable List Container -->
+        <div id="emailListContainer" class="flex-1 overflow-y-auto p-2 space-y-1.5">
+            <div class="flex flex-col items-center justify-center p-12 text-slate-500 text-xs">
+                <i class="fa-solid fa-spinner fa-spin text-xl text-indigo-400 mb-2"></i>
+                <p>Xabarlar yuklanmoqda...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Right Pane: Email Detail & AI Interaction -->
+    <section id="emailDetailPane" class="flex-1 flex flex-col bg-slate-900/10 overflow-hidden">
+        <!-- Empty Placeholder (Hidden when email selected) -->
+        <div id="emptyDetailView" class="flex-1 flex flex-col items-center justify-center text-slate-500 p-8 text-center select-none">
+            <div class="w-20 h-20 rounded-3xl bg-slate-800/40 border border-slate-700/50 flex items-center justify-center text-indigo-400 text-3xl mb-4 shadow-xl">
+                <i class="fa-solid fa-envelope-open-text"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-200 mb-1">Xatni tanlang</h3>
+            <p class="text-xs max-w-sm text-slate-400 leading-relaxed">
+                Chap tomondagi ro'yxatdan xabarni tanlang. AI Agent darhol uning qisqacha xulosasi, topshiriqlari va javob draftlarini tayyorlab beradi.
+            </p>
+        </div>
+
+        <!-- Active Email Detail View -->
+        <div id="activeDetailView" class="hidden flex-1 flex flex-col h-full overflow-hidden">
+            <!-- Email Detail Header -->
+            <div class="p-5 border-b border-slate-800/80 bg-slate-900/40 backdrop-blur-md">
+                <div class="flex items-start justify-between gap-4 mb-3">
+                    <div class="flex items-start gap-2.5">
+                        <button id="starEmailBtn" onclick="toggleStarCurrentEmail()" class="text-slate-400 hover:text-amber-400 p-1 text-base transition-colors shrink-0 mt-0.5" title="Saralash">
+                            <i class="fa-regular fa-star"></i>
+                        </button>
+                        <h1 id="detailSubject" class="text-lg font-bold text-slate-100 leading-snug"></h1>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span id="detailPriorityBadge" class="px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm"></span>
+                        <span id="detailCategoryBadge" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700"></span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between text-xs text-slate-400 flex-wrap gap-2 pt-1 border-t border-slate-800/60">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow">
+                            <span id="senderAvatarInitial">G</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-slate-200 text-xs" id="detailSenderName"></span>
+                                <span class="text-slate-500 font-mono text-[11px]" id="detailSenderEmail"></span>
+                            </div>
+                            <p class="text-[11px] text-slate-500" id="detailRecipientEmail">Kimgadir: sizga</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span id="detailDate" class="text-slate-400 font-mono text-[11px]"></span>
+                        <button onclick="openReminderForCurrentEmail()" class="px-2.5 py-1 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/25 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
+                            <i class="fa-regular fa-clock text-xs"></i>
+                            <span>Eslatma qo'yish</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Scroll Area -->
+            <div class="flex-1 overflow-y-auto p-5 space-y-5">
+                <!-- AI Brain Analysis Card -->
+                <div class="rounded-2xl p-5 bg-gradient-to-br from-indigo-950/60 via-slate-900/80 to-purple-950/50 border border-indigo-500/30 shadow-xl backdrop-blur-md space-y-4 glow-indigo">
+                    <div class="flex items-center justify-between flex-wrap gap-2 border-b border-indigo-500/20 pb-3">
+                        <div class="flex items-center gap-2 text-indigo-300 font-extrabold text-sm tracking-wide">
+                            <i class="fa-solid fa-brain text-indigo-400 text-base"></i>
+                            <span>AI Tahlili & Smart Summarizer</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-xs">
+                            <span id="detailDeadlineBadge" class="hidden px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold text-[11px]"></span>
+                            <span id="detailSentimentBadge" class="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-medium text-[11px]"></span>
+                            <span id="detailActionTag" class="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30 text-[11px]"></span>
+                        </div>
+                    </div>
+
+                    <!-- Key Takeaway Banner -->
+                    <div class="p-3.5 rounded-xl bg-slate-950/70 border border-indigo-500/30 flex items-start gap-3 shadow-inner">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
+                            <i class="fa-solid fa-bullseye text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-bold text-indigo-300 uppercase tracking-wider">Asosiy Mazmun (Key Takeaway)</p>
+                            <p id="detailKeyTakeaway" class="text-xs text-slate-100 font-semibold leading-relaxed mt-0.5"></p>
+                        </div>
+                    </div>
+
+                    <!-- 3-4 Bullet Summary -->
+                    <div>
+                        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Qisqacha Xulosa (Bullet Points)</p>
+                        <div id="detailSummaryBullets" class="text-xs text-slate-200 space-y-1.5 whitespace-pre-line leading-relaxed font-normal bg-slate-950/40 p-3 rounded-xl border border-slate-800/80"></div>
+                    </div>
+
+                    <!-- Action Items List -->
+                    <div id="detailActionItemsContainer" class="hidden pt-2 border-t border-indigo-500/20">
+                        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Tavsiya etilgan amallar (Action Items)</p>
+                        <div id="detailActionItemsList" class="space-y-1.5 text-xs text-slate-300"></div>
+                    </div>
+                </div>
+
+                <!-- Email Body Tabs: Text vs HTML View -->
+                <div class="bg-slate-900/60 border border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+                    <div class="flex items-center justify-between px-4 py-2.5 bg-slate-950/60 border-b border-slate-800">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Xat Ko'rinishi</span>
+                        <div class="flex items-center gap-1 bg-slate-900 p-0.5 rounded-lg border border-slate-800 text-xs">
+                            <button id="viewTypeTextBtn" onclick="switchBodyView('text')" class="px-2.5 py-1 rounded-md bg-indigo-600 text-white font-semibold transition text-[11px]">
+                                <i class="fa-solid fa-align-left mr-1"></i> Matn
+                            </button>
+                            <button id="viewTypeHtmlBtn" onclick="switchBodyView('html')" class="px-2.5 py-1 rounded-md text-slate-400 hover:text-white transition text-[11px]">
+                                <i class="fa-solid fa-code mr-1"></i> Asl HTML
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Text View -->
+                    <div id="bodyTextContainer" class="p-5">
+                        <div id="detailBody" class="text-sm text-slate-200 whitespace-pre-wrap leading-relaxed font-sans"></div>
+                    </div>
+
+                    <!-- HTML Iframe View -->
+                    <div id="bodyHtmlContainer" class="hidden p-3 bg-white rounded-b-2xl">
+                        <iframe id="detailHtmlIframe" sandbox="allow-same-origin" class="w-full min-h-[350px] border-none"></iframe>
+                    </div>
+                </div>
+
+                <!-- Smart Reply Generator Box -->
+                <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-reply text-indigo-400"></i>
+                            <h4 class="text-sm font-bold text-slate-100">Smart Reply Generator</h4>
+                        </div>
+                        
+                        <!-- Tone Selector Pills -->
+                        <div class="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl text-xs border border-slate-800">
+                            <button onclick="setDraftTone('Professional', this)" class="tone-btn px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-semibold transition-all text-[11px]">👔 Professional</button>
+                            <button onclick="setDraftTone('Friendly', this)" class="tone-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition-all text-[11px]">😊 Do'stona</button>
+                            <button onclick="setDraftTone('Short', this)" class="tone-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition-all text-[11px]">⚡ Qisqa</button>
+                            <button onclick="setDraftTone('Detailed', this)" class="tone-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition-all text-[11px]">📋 Batafsil</button>
+                        </div>
+                    </div>
+
+                    <!-- Quick Suggestions Chips -->
+                    <div class="flex items-center gap-1.5 flex-wrap text-[11px]">
+                        <span class="text-slate-500 text-[10px] font-semibold uppercase">Tezkor:</span>
+                        <button onclick="insertQuickReply('Assalomu alaykum. Xabaringizni qabul qildik, ko\'rib chiqib tez orada to\'liq javob qaytaramiz.')" class="px-2 py-0.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition">
+                            ✅ Qabul qilindi
+                        </button>
+                        <button onclick="insertQuickReply('Assalomu alaykum. Taklifingiz bo\'yicha bir nechta qo\'shimcha savollarimiz bor edi. Iltimos, batafsilroq ma\'lumot bersangiz.')" class="px-2 py-0.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition">
+                            ❓ Qo'shimcha ma'lumot
+                        </button>
+                        <button onclick="insertQuickReply('Taklifingiz ma\'qul. Kelgusi hafta seshanba soat 15:00 da Zoom orqali muhokama qilsak qanday bo\'ladi?')" class="px-2 py-0.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition">
+                            🗓️ Uchrashuv taklif qilish
+                        </button>
+                    </div>
+
+                    <!-- Generate button -->
+                    <div class="flex items-center gap-3">
+                        <button onclick="generateReplyForCurrentEmail()" id="genReplyBtn" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/25 transition-all">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <span>AI Javob Generatsiya Qilish</span>
+                        </button>
+                        <span id="replyGenStatus" class="text-xs text-indigo-400 italic hidden flex items-center gap-1.5">
+                            <i class="fa-solid fa-spinner fa-spin"></i> AI professional javob yozmoqda...
+                        </span>
+                    </div>
+
+                    <!-- Reply Draft Textarea -->
+                    <div class="space-y-1.5">
+                        <textarea 
+                            id="replyTextarea" 
+                            rows="5" 
+                            class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-sans leading-relaxed"
+                            placeholder="AI javobi shu yerda shakllanadi. Siz uni erkin tahrirlashingiz yoki bevosita jo'natishingiz mumkin..."
+                        ></textarea>
+                    </div>
+
+                    <!-- Bottom Reply Action Bar -->
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-800 flex-wrap gap-2">
+                        <div class="text-[11px] text-slate-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-shield-check text-emerald-400"></i>
+                            <span>Shaxsiy xotirangiz (User Preferences) asosida yaratiladi</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="copyReplyText()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5">
+                                <i class="fa-regular fa-copy"></i>
+                                <span>Nusxa olish</span>
+                            </button>
+                            <button onclick="sendReplyForCurrentEmail()" id="sendReplyBtn" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition-all">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                <span>Xatni Yuborish (SMTP)</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Slide-over: AI Action Agent Copilot Drawer -->
+<div id="agentChatDrawer" class="fixed inset-y-0 right-0 w-96 bg-slate-900/95 border-l border-slate-800 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col backdrop-blur-2xl">
+    <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm shadow">
+                <i class="fa-solid fa-robot"></i>
+            </div>
+            <div>
+                <h3 class="font-extrabold text-sm text-slate-100">AI Action Agent</h3>
+                <p class="text-[10px] text-emerald-400 flex items-center gap-1 font-semibold">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot"></span> Onlayn & Avtonom
+                </p>
+            </div>
+        </div>
+        <button onclick="toggleAgentChat()" class="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-800 transition">
+            <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+    </div>
+
+    <!-- Quick Prompt Chips -->
+    <div class="p-3 border-b border-slate-800 bg-slate-950/30 flex items-center gap-1.5 overflow-x-auto text-[11px]">
+        <button onclick="quickPromptToAgent('Bugungi barcha shoshilinch xatlarni aniqlab ber')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 whitespace-nowrap">
+            🔴 Shoshilinch xatlar
+        </button>
+        <button onclick="quickPromptToAgent('Oxirgi xatlar bo\'yicha qisqacha dayjest ber')" class="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 whitespace-nowrap">
+            📊 Inbox Xulosa
+        </button>
+    </div>
+
+    <!-- Chat Message Container -->
+    <div id="agentChatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 text-xs">
+        <div class="flex items-start gap-2.5">
+            <div class="w-6 h-6 rounded-md bg-indigo-600 text-white flex items-center justify-center shrink-0 text-xs">
+                <i class="fa-solid fa-robot text-[10px]"></i>
+            </div>
+            <div class="p-3 rounded-2xl rounded-tl-none bg-slate-800/70 border border-slate-700/60 text-slate-200 leading-relaxed">
+                Salom! Men sizning <b>AI Action Agent</b> yordamchingizman. Menga xatlarni qidirish, javob yozish, eslatma qo'yish yoki dayjest tayyorlash bo'yicha buyruq berishingiz mumkin.
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Input Form -->
+    <div class="p-3 border-t border-slate-800 bg-slate-950/80">
+        <form onsubmit="handleAgentChatSubmit(event)" class="relative">
+            <input 
+                type="text" 
+                id="agentChatInput" 
+                placeholder="Agentga buyruq bering..." 
+                class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-3 pr-10 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+            <button type="submit" id="agentSendBtn" class="absolute right-2 top-1/2 -translate-y-1/2 text-indigo-400 hover:text-indigo-300 p-1">
+                <i class="fa-solid fa-paper-plane text-sm"></i>
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Connect Account -->
+<div id="connectModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="text-sm font-extrabold text-slate-100 flex items-center gap-2">
+                <i class="fa-solid fa-link text-indigo-400"></i> Email Hisobini Ulash (IMAP)
+            </h3>
+            <button onclick="closeConnectModal()" class="text-slate-400 hover:text-slate-200">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Provider Selector -->
+        <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Pochta Provayderini Tanlang</label>
+            <div class="grid grid-cols-4 gap-2">
+                <button type="button" onclick="selectProviderPreset('gmail')" id="presetGmail" class="provider-pill p-2 rounded-xl border border-indigo-500 bg-indigo-500/10 text-indigo-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all">
+                    <span>🔴</span> Gmail
+                </button>
+                <button type="button" onclick="selectProviderPreset('outlook')" id="presetOutlook" class="provider-pill p-2 rounded-xl border border-slate-800 bg-slate-950 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 hover:border-slate-700 transition-all">
+                    <span>🔵</span> Outlook
+                </button>
+                <button type="button" onclick="selectProviderPreset('yahoo')" id="presetYahoo" class="provider-pill p-2 rounded-xl border border-slate-800 bg-slate-950 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 hover:border-slate-700 transition-all">
+                    <span>🟣</span> Yahoo
+                </button>
+                <button type="button" onclick="selectProviderPreset('custom')" id="presetCustom" class="provider-pill p-2 rounded-xl border border-slate-800 bg-slate-950 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 hover:border-slate-700 transition-all">
+                    <span>⚙️</span> Custom
+                </button>
+            </div>
+        </div>
+
+        <form id="connectForm" onsubmit="handleAccountConnect(event)" class="space-y-3 text-sm">
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Email manzili</label>
+                <input type="email" id="accEmail" required placeholder="sizning_ismingiz@gmail.com" oninput="autoFillUsername(this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Gmail App Password (16 xonali parol)</label>
+                <div class="relative">
+                    <input type="password" id="accPassword" required placeholder="xxxx xxxx xxxx xxxx" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none tracking-wider font-mono">
+                    <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+                        <i class="fa-regular fa-eye" id="pwdEyeIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="advancedSettingsBox" class="space-y-3 pt-2 border-t border-slate-800/80">
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">IMAP Server</label>
+                        <input type="text" id="accImapHost" value="imap.gmail.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-slate-200 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">IMAP Port</label>
+                        <input type="number" id="accImapPort" value="993" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-slate-200 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">SMTP Server</label>
+                        <input type="text" id="accSmtpHost" value="smtp.gmail.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-slate-200 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">SMTP Port</label>
+                        <input type="number" id="accSmtpPort" value="465" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-slate-200 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Username / Login</label>
+                    <input type="text" id="accUsername" placeholder="sizning_ismingiz@gmail.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-slate-200 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+            </div>
+
+            <!-- Error / Timeout Diagnostic Alert Box -->
+            <div id="connectErrorBox" class="hidden p-3 rounded-xl bg-rose-950/40 border border-rose-500/40 text-xs space-y-2">
+                <p id="connectErrorText" class="text-rose-300 whitespace-pre-line leading-relaxed font-mono text-[11px]"></p>
+                <div id="forceSaveContainer" class="hidden pt-1">
+                    <button type="button" onclick="submitConnectForm(true)" class="w-full py-2 px-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 shadow-lg shadow-amber-600/30">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Baribir saqlash (Tekshiruvsiz/Sinov rejimida)</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 pt-1 pb-1">
+                <input type="checkbox" id="accSkipVerify" class="rounded bg-slate-950 border-slate-700 text-indigo-600 focus:ring-indigo-500">
+                <label for="accSkipVerify" class="text-[11px] text-slate-400 cursor-pointer select-none">
+                    Ulanishni tekshirmasdan saqlash (Offline / Sinov rejimi yoki 993-port bloklangan bo'lsa)
+                </label>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+                <button type="button" onclick="closeConnectModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium">Bekor qilish</button>
+                <button type="submit" id="connectSubmitBtn" class="px-5 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-indigo-600/25 transition-all">
+                    <i class="fa-solid fa-link"></i>
+                    <span>Ulash va Sinxronlash</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Create Reminder -->
+<div id="reminderModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
+                <i class="fa-regular fa-clock text-indigo-400"></i> Follow-up Eslatma
+            </h3>
+            <button onclick="closeReminderModal()" class="text-slate-400 hover:text-slate-200">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form id="reminderForm" onsubmit="handleCreateReminder(event)" class="space-y-3">
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Eslatma matni</label>
+                <input type="text" id="remText" required placeholder="Masalan: Shartnoma bo'yicha javob yozish..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Eslatish vaqti</label>
+                <select id="remHours" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-slate-200 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <option value="2">2 soatdan so'ng</option>
+                    <option value="6">6 soatdan so'ng</option>
+                    <option value="24" selected>Ertaga shu paytda (24 soat)</option>
+                    <option value="48">2 kundan keyin</option>
+                    <option value="72">3 kundan keyin</option>
+                </select>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                <button type="button" onclick="closeReminderModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium">Bekor qilish</button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/25">Saqlash</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    let currentCategory = 'all';
+    let currentPriority = 'all';
+    let currentEmailId = null;
+    let currentTone = 'Professional';
+    let currentBodyView = 'text'; // 'text' or 'html'
+    let currentEmailHtml = '';
+    let emailsData = [];
+    let currentFilteredList = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadEmails();
+        loadReminders();
+        loadAccounts();
+    });
+
+    // -------------------------------------------------------------
+    // Accounts Loader
+    // -------------------------------------------------------------
+    async function loadAccounts() {
+        try {
+            const res = await fetch('/api/accounts');
+            const accounts = await res.json();
+            if (accounts && accounts.length > 0) {
+                const activeAcc = accounts.find(a => a.is_active) || accounts[0];
+                const emailEl = document.getElementById('sidebarAccountEmail');
+                if (emailEl) {
+                    emailEl.innerText = activeAcc.email_address;
+                    emailEl.title = activeAcc.email_address;
+                }
+            }
+        } catch (e) {
+            console.error("Account load error:", e);
+        }
+    }
+
+    // -------------------------------------------------------------
+    // Email Loader & Auto-selector
+    // -------------------------------------------------------------
+    async function loadEmails() {
+        try {
+            let url = `/api/emails?category=${currentCategory === 'starred' ? 'all' : currentCategory}&priority=${currentPriority}`;
+            const res = await fetch(url);
+            let data = await res.json();
+
+            // Client-side Starred filter if selected
+            if (currentCategory === 'starred') {
+                data = data.filter(e => e.is_starred);
+            }
+
+            emailsData = data;
+            currentFilteredList = data;
+            renderEmailList(currentFilteredList);
+
+            // Update Starred counter
+            const starredCount = emailsData.filter(e => e.is_starred).length;
+            const starBadge = document.getElementById('catCountStarred');
+            if (starBadge) starBadge.innerText = starredCount;
+
+            // Automatically select first email if none selected or current not in list
+            if (emailsData.length > 0) {
+                if (!currentEmailId || !emailsData.some(e => e.id === currentEmailId)) {
+                    selectEmail(emailsData[0].id);
+                }
+            } else {
+                currentEmailId = null;
+                document.getElementById('emptyDetailView').classList.remove('hidden');
+                document.getElementById('activeDetailView').classList.add('hidden');
+            }
+        } catch (err) {
+            console.error("loadEmails error:", err);
+            showToast('Xatlarni yuklashda xatolik', 'error');
+        }
+    }
+
+    // -------------------------------------------------------------
+    // Live In-List Search Filter
+    // -------------------------------------------------------------
+    function liveFilterEmails(query) {
+        if (!query || query.trim() === '') {
+            currentFilteredList = emailsData;
+        } else {
+            const q = query.toLowerCase().trim();
+            currentFilteredList = emailsData.filter(e => 
+                (e.subject && e.subject.toLowerCase().includes(q)) ||
+                (e.sender_name && e.sender_name.toLowerCase().includes(q)) ||
+                (e.sender_email && e.sender_email.toLowerCase().includes(q)) ||
+                (e.snippet && e.snippet.toLowerCase().includes(q))
+            );
+        }
+        renderEmailList(currentFilteredList);
+    }
+
+    // -------------------------------------------------------------
+    // Render Email Cards
+    // -------------------------------------------------------------
+    function renderEmailList(list) {
+        const container = document.getElementById('emailListContainer');
+        const countBadge = document.getElementById('filteredCount');
+        if (countBadge) countBadge.innerText = `${list.length} ta xat`;
+
+        if (!list || list.length === 0) {
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center p-12 text-slate-500 text-center">
+                    <div class="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-600 text-xl mb-2">
+                        <i class="fa-solid fa-box-open"></i>
+                    </div>
+                    <p class="text-xs font-semibold text-slate-400">Hech qanday xat topilmadi</p>
+                    <p class="text-[11px] text-slate-500 mt-1">Filtrni o'zgartiring yoki demo xabarlarni yuklang</p>
+                </div>
+            `;
+            return;
+        }
+
+        const priorityColors = {
+            'Urgent': 'bg-rose-500/15 text-rose-300 border-rose-500/30',
+            'High': 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+            'Normal': 'bg-yellow-500/15 text-yellow-300 border-yellow-500/30',
+            'Low': 'bg-slate-500/15 text-slate-400 border-slate-500/30'
+        };
+
+        const priorityDots = {
+            'Urgent': 'bg-rose-500 pulse-dot',
+            'High': 'bg-amber-500',
+            'Normal': 'bg-yellow-400',
+            'Low': 'bg-slate-500'
+        };
+
+        const categoryIcons = {
+            'Work': '💼 Ish',
+            'Important': '🛡️ Muhim',
+            'Personal': '👤 Shaxsiy',
+            'Promotions': '🏷️ Aksiya',
+            'Spam / Suspicious': '⚠️ Spam',
+            'Other': '✉️ Boshqa'
+        };
+
+        container.innerHTML = list.map(em => {
+            const isSelected = em.id === currentEmailId;
+            const cardClasses = isSelected 
+                ? 'bg-gradient-to-r from-indigo-950/70 to-slate-900/90 border-indigo-500/60 shadow-lg shadow-indigo-950/30 border-l-4 border-l-indigo-500' 
+                : 'bg-slate-900/40 border-slate-800/70 hover:bg-slate-800/60 hover:border-slate-700/80';
+
+            const unreadDot = !em.is_read ? '<span class="w-2 h-2 rounded-full bg-indigo-400 pulse-dot shrink-0" title="O\'qilmagan"></span>' : '';
+            const starClass = em.is_starred ? 'fa-solid fa-star text-amber-400' : 'fa-regular fa-star text-slate-500 hover:text-amber-400';
+
+            return `
+                <div 
+                    onclick="selectEmail(${em.id})" 
+                    class="email-card p-3 rounded-2xl cursor-pointer transition-all duration-200 border ${cardClasses} group"
+                >
+                    <div class="flex items-center justify-between gap-2 mb-1">
+                        <div class="flex items-center gap-1.5 overflow-hidden">
+                            ${unreadDot}
+                            <span class="text-xs font-bold text-slate-200 truncate ${!em.is_read ? 'text-white' : ''}">${em.sender_name || em.sender_email}</span>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="text-[10px] text-slate-500 font-mono">${em.received_at.split(' ')[1] || ''}</span>
+                            <button onclick="event.stopPropagation(); toggleStarInline(${em.id})" class="p-1 text-xs transition transform hover:scale-125" title="Saralash">
+                                <i class="${starClass}"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <h4 class="text-xs font-bold text-slate-100 truncate mb-1">
+                        ${em.subject}
+                    </h4>
+
+                    <p class="text-[11px] text-slate-400 line-clamp-2 leading-relaxed mb-2.5">
+                        ${em.snippet || ''}
+                    </p>
+                    
+                    <div class="flex items-center justify-between text-[10px] pt-1 border-t border-slate-800/50">
+                        <span class="px-2 py-0.5 rounded-full font-semibold border flex items-center gap-1.5 ${priorityColors[em.priority] || ''}">
+                            <span class="w-1.5 h-1.5 rounded-full ${priorityDots[em.priority] || ''}"></span>
+                            <span>${em.priority}</span>
+                        </span>
+                        <div class="flex items-center gap-1.5">
+                            ${em.has_attachments ? '<i class="fa-solid fa-paperclip text-slate-400 text-[10px]" title="Biriktirilgan fayl"></i>' : ''}
+                            <span class="px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-300 font-medium">
+                                ${categoryIcons[em.category] || em.category}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // -------------------------------------------------------------
+    // Select & Display Single Email
+    // -------------------------------------------------------------
+    async function selectEmail(id) {
+        currentEmailId = id;
+        renderEmailList(currentFilteredList);
+
+        try {
+            const res = await fetch(`/api/emails/${id}`);
+            const data = await res.json();
+
+            document.getElementById('emptyDetailView').classList.add('hidden');
+            document.getElementById('activeDetailView').classList.remove('hidden');
+
+            document.getElementById('detailSubject').innerText = data.subject;
+            document.getElementById('detailSenderName').innerText = data.sender_name || 'Noma\'lum';
+            document.getElementById('detailSenderEmail').innerText = `<${data.sender_email}>`;
+            document.getElementById('detailRecipientEmail').innerText = `Kimgadir: ${data.recipient_email || 'Sizga'}`;
+            document.getElementById('senderAvatarInitial').innerText = (data.sender_name || data.sender_email)[0].toUpperCase();
+            document.getElementById('detailDate').innerText = data.received_at;
+
+            // Star state
+            const starBtn = document.getElementById('starEmailBtn');
+            if (data.is_starred) {
+                starBtn.innerHTML = '<i class="fa-solid fa-star text-amber-400"></i>';
+            } else {
+                starBtn.innerHTML = '<i class="fa-regular fa-star text-slate-400"></i>';
+            }
+
+            // Priority badge
+            const priorityBadge = document.getElementById('detailPriorityBadge');
+            const pColors = {
+                'Urgent': 'bg-rose-500/20 text-rose-300 border border-rose-500/30',
+                'High': 'bg-amber-500/20 text-amber-300 border border-amber-500/30',
+                'Normal': 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30',
+                'Low': 'bg-slate-500/20 text-slate-300 border border-slate-500/30'
+            };
+            priorityBadge.className = `px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 ${pColors[data.priority] || ''}`;
+            priorityBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${data.priority === 'Urgent' ? 'bg-rose-500 pulse-dot' : 'bg-amber-400'}"></span> Prioritet: ${data.priority}`;
+
+            document.getElementById('detailCategoryBadge').innerText = data.category;
+            document.getElementById('detailActionTag').innerText = `Tavsiya: ${data.action_suggested || 'Ko\'rib chiqish'}`;
+
+            // AI Summary & Details
+            document.getElementById('detailKeyTakeaway').innerText = data.key_takeaway || data.subject;
+            document.getElementById('detailSummaryBullets').innerText = data.summary || "Xulosa tahlil qilinmoqda...";
+
+            // Deadline
+            const deadlineBadge = document.getElementById('detailDeadlineBadge');
+            if (data.detected_deadline) {
+                deadlineBadge.classList.remove('hidden');
+                deadlineBadge.innerText = `⏰ Muddat: ${data.detected_deadline}`;
+            } else {
+                deadlineBadge.classList.add('hidden');
+            }
+
+            // Sentiment
+            const sentimentBadge = document.getElementById('detailSentimentBadge');
+            sentimentBadge.innerText = `Kayfiyat: ${data.sentiment || 'Neutral'}`;
+
+            // Action Items
+            const actionContainer = document.getElementById('detailActionItemsContainer');
+            const actionList = document.getElementById('detailActionItemsList');
+            if (data.action_items && data.action_items.length > 0) {
+                actionContainer.classList.remove('hidden');
+                actionList.innerHTML = data.action_items.map(act => `
+                    <div class="flex items-center gap-2.5 p-2 rounded-xl bg-slate-950/60 border border-slate-800">
+                        <i class="fa-solid fa-circle-check text-emerald-400 text-xs shrink-0"></i>
+                        <span class="text-xs text-slate-200 font-medium">${act}</span>
+                    </div>
+                `).join('');
+            } else {
+                actionContainer.classList.add('hidden');
+            }
+
+            // Email Body: Plain Text and HTML
+            document.getElementById('detailBody').innerText = data.body_text || "(Matn mavjud emas)";
+            currentEmailHtml = data.body_html || '';
+
+            // Setup HTML iframe if present
+            const iframe = document.getElementById('detailHtmlIframe');
+            if (iframe && currentEmailHtml) {
+                const doc = iframe.contentWindow.document;
+                doc.open();
+                doc.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="utf-8">
+                        <style>
+                            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 12px; color: #1e293b; line-height: 1.5; font-size: 14px; }
+                        </style>
+                    </head>
+                    <body>${currentEmailHtml}</body>
+                    </html>
+                `);
+                doc.close();
+            }
+
+            // Default to text view
+            switchBodyView('text');
+
+            // Populate initial draft if exists
+            const replyBox = document.getElementById('replyTextarea');
+            if (data.drafts && data.drafts.length > 0) {
+                replyBox.value = data.drafts[0].body;
+            } else {
+                replyBox.value = '';
+            }
+
+            // Mark read locally
+            const matched = emailsData.find(e => e.id === id);
+            if (matched) matched.is_read = true;
+        } catch (err) {
+            console.error("selectEmail error:", err);
+            showToast('Xat ma\'lumotlarini yuklashda xatolik', 'error');
+        }
+    }
+
+    // -------------------------------------------------------------
+    // Switch Text / HTML Body View
+    // -------------------------------------------------------------
+    function switchBodyView(view) {
+        currentBodyView = view;
+        const textBtn = document.getElementById('viewTypeTextBtn');
+        const htmlBtn = document.getElementById('viewTypeHtmlBtn');
+        const textContainer = document.getElementById('bodyTextContainer');
+        const htmlContainer = document.getElementById('bodyHtmlContainer');
+
+        if (view === 'html' && currentEmailHtml) {
+            textBtn.className = 'px-2.5 py-1 rounded-md text-slate-400 hover:text-white transition text-[11px]';
+            htmlBtn.className = 'px-2.5 py-1 rounded-md bg-indigo-600 text-white font-semibold transition text-[11px]';
+            textContainer.classList.add('hidden');
+            htmlContainer.classList.remove('hidden');
+        } else {
+            textBtn.className = 'px-2.5 py-1 rounded-md bg-indigo-600 text-white font-semibold transition text-[11px]';
+            htmlBtn.className = 'px-2.5 py-1 rounded-md text-slate-400 hover:text-white transition text-[11px]';
+            textContainer.classList.remove('hidden');
+            htmlContainer.classList.add('hidden');
+        }
+    }
+
+    // -------------------------------------------------------------
+    // Star Toggle Helpers
+    // -------------------------------------------------------------
+    async function toggleStarInline(id) {
+        try {
+            const res = await fetch(`/api/emails/${id}/toggle-star`, { method: 'POST' });
+            const data = await res.json();
+            const em = emailsData.find(e => e.id === id);
+            if (em) em.is_starred = data.is_starred;
+            renderEmailList(currentFilteredList);
+            if (currentEmailId === id) {
+                const starBtn = document.getElementById('starEmailBtn');
+                starBtn.innerHTML = data.is_starred ? '<i class="fa-solid fa-star text-amber-400"></i>' : '<i class="fa-regular fa-star text-slate-400"></i>';
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function toggleStarCurrentEmail() {
+        if (!currentEmailId) return;
+        await toggleStarInline(currentEmailId);
+    }
+
+    // -------------------------------------------------------------
+    // Smart Reply Generation & Quick Responses
+    // -------------------------------------------------------------
+    function setDraftTone(tone, btn) {
+        currentTone = tone;
+        document.querySelectorAll('.tone-btn').forEach(b => {
+            b.className = 'tone-btn px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition-all text-[11px]';
+        });
+        btn.className = 'tone-btn px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-semibold transition-all text-[11px]';
+    }
+
+    function insertQuickReply(text) {
+        const area = document.getElementById('replyTextarea');
+        area.value = text;
+        area.focus();
+        showToast("Tezkor javob kiritildi!", "info");
+    }
+
+    async function generateReplyForCurrentEmail() {
+        if (!currentEmailId) return;
+        const btn = document.getElementById('genReplyBtn');
+        const status = document.getElementById('replyGenStatus');
+        btn.disabled = true;
+        status.classList.remove('hidden');
+
+        try {
+            const res = await fetch(`/api/emails/${currentEmailId}/generate-reply`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tone: currentTone })
+            });
+            const data = await res.json();
+            document.getElementById('replyTextarea').value = data.draft.body;
+            showToast(`${currentTone} tonida yangi AI javob tayyorlandi!`, 'success');
+        } catch (err) {
+            showToast('Javob generatsiyasida xatolik', 'error');
+        } finally {
+            btn.disabled = false;
+            status.classList.add('hidden');
+        }
+    }
+
+    function copyReplyText() {
+        const text = document.getElementById('replyTextarea').value;
+        if (!text) {
+            showToast('Nusxa olish uchun matn mavjud emas', 'info');
+            return;
+        }
+        navigator.clipboard.writeText(text);
+        showToast('Javob matni xotiraga nusxalandi!', 'success');
+    }
+
+    async function sendReplyForCurrentEmail() {
+        if (!currentEmailId) return;
+        const bodyText = document.getElementById('replyTextarea').value;
+        if (!bodyText.trim()) {
+            showToast('Iltimos, avval javob matnini kiriting', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('sendReplyBtn');
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Yuborilmoqda...`;
+
+        try {
+            const res = await fetch(`/api/emails/${currentEmailId}/send-reply`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ body: bodyText })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(data.message, 'success');
+            } else {
+                showToast(data.detail || 'Xat jo\'natishda xatolik', 'error');
+            }
+        } catch (err) {
+            showToast('Server xatosi: xat yuborilmadi', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> <span>Xatni Yuborish (SMTP)</span>`;
+        }
+    }
+
+    // -------------------------------------------------------------
+    // Category & Priority Filters
+    // -------------------------------------------------------------
+    function setCategoryFilter(cat, btn) {
+        currentCategory = cat;
+        document.querySelectorAll('.category-btn').forEach(b => {
+            b.className = 'category-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all text-slate-300 hover:bg-slate-800/60 hover:text-white';
+        });
+        btn.className = 'category-btn w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all bg-indigo-600/15 text-indigo-400 border border-indigo-500/30 shadow-sm';
+
+        const titles = {
+            'all': 'Barcha xatlar',
+            'starred': 'Saralanganlar',
+            'Work': 'Ish (Work)',
+            'Important': 'Muhim (Important)',
+            'Personal': 'Shaxsiy (Personal)',
+            'Promotions': 'Aksiya & Chegirmalar',
+            'Spam / Suspicious': 'Spam / Shubhali'
+        };
+        document.getElementById('currentCategoryTitle').innerHTML = `<i class="fa-solid fa-inbox text-indigo-400"></i> <span>${titles[cat] || cat}</span>`;
+        loadEmails();
+    }
+
+    function setPriorityFilter(p, btn) {
+        currentPriority = p;
+        document.querySelectorAll('.priority-btn').forEach(b => {
+            b.className = 'priority-btn px-2 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-medium transition-all flex items-center gap-1 text-[11px]';
+        });
+        btn.className = 'priority-btn px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-semibold shadow-sm transition-all text-[11px]';
+        loadEmails();
+    }
+
+    // -------------------------------------------------------------
+    // AI Semantic Natural Search
+    // -------------------------------------------------------------
+    async function handleNaturalSearch() {
+        const input = document.getElementById('nlSearchInput');
+        const query = input.value.trim();
+        if (!query) return;
+
+        showToast(`AI semantik qidiruv: "${query}"...`, 'info');
+        try {
+            const res = await fetch('/api/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: query })
+            });
+            const data = await res.json();
+            emailsData = data.emails;
+            currentFilteredList = data.emails;
+            renderEmailList(currentFilteredList);
+            showToast(`${data.count} ta mos keluvchi xat topildi!`, 'success');
+            if (emailsData.length > 0) selectEmail(emailsData[0].id);
+        } catch (err) {
+            showToast('AI qidiruvda xatolik', 'error');
+        }
+    }
+
+    // -------------------------------------------------------------
+    // AI Action Copilot Drawer
+    // -------------------------------------------------------------
+    function toggleAgentChat() {
+        const drawer = document.getElementById('agentChatDrawer');
+        drawer.classList.toggle('translate-x-full');
+    }
+
+    function quickPromptToAgent(prompt) {
+        document.getElementById('agentChatInput').value = prompt;
+        document.getElementById('agentSendBtn').click();
+    }
+
+    async function handleAgentChatSubmit(e) {
+        e.preventDefault();
+        const inp = document.getElementById('agentChatInput');
+        const text = inp.value.trim();
+        if (!text) return;
+
+        const chatBox = document.getElementById('agentChatMessages');
+        chatBox.innerHTML += `
+            <div class="flex items-start justify-end gap-2.5">
+                <div class="p-3 rounded-2xl rounded-tr-none bg-indigo-600 text-white leading-relaxed max-w-[85%] font-medium">
+                    ${text}
+                </div>
+            </div>
+        `;
+        inp.value = '';
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        const loadingId = 'loading-' + Date.now();
+        chatBox.innerHTML += `
+            <div id="${loadingId}" class="flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-md bg-indigo-600 text-white flex items-center justify-center shrink-0 text-xs">
+                    <i class="fa-solid fa-robot text-[10px]"></i>
+                </div>
+                <div class="p-3 rounded-2xl rounded-tl-none bg-slate-800/70 border border-slate-700/60 text-slate-300 italic">
+                    <i class="fa-solid fa-spinner fa-spin mr-1"></i> Agent tahlil qilmoqda va tool chaqirmoqda...
+                </div>
+            </div>
+        `;
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        try {
+            const res = await fetch('/api/agent/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text })
+            });
+            const data = await res.json();
+            document.getElementById(loadingId).remove();
+
+            let toolLogHtml = '';
+            if (data.tools_executed && data.tools_executed.length > 0) {
+                toolLogHtml = `
+                    <div class="mt-2 pt-2 border-t border-slate-700/60 font-mono text-[10px] text-indigo-300">
+                        ⚡ Bajarilgan tool: <code>${data.tools_executed.join(', ')}</code>
+                    </div>
+                `;
+            }
+
+            chatBox.innerHTML += `
+                <div class="flex items-start gap-2.5">
+                    <div class="w-6 h-6 rounded-md bg-indigo-600 text-white flex items-center justify-center shrink-0 text-xs">
+                        <i class="fa-solid fa-robot text-[10px]"></i>
+                    </div>
+                    <div class="p-3 rounded-2xl rounded-tl-none bg-slate-800 border border-slate-700/80 text-slate-100 leading-relaxed max-w-[85%] shadow-sm">
+                        ${data.agent_reply.replace(/\n/g, '<br>')}
+                        ${toolLogHtml}
+                    </div>
+                </div>
+            `;
+            chatBox.scrollTop = chatBox.scrollHeight;
+            loadEmails();
+            loadReminders();
+        } catch (err) {
+            document.getElementById(loadingId).remove();
+            chatBox.innerHTML += `
+                <div class="flex items-start gap-2.5">
+                    <div class="w-6 h-6 rounded-md bg-rose-600 text-white flex items-center justify-center shrink-0 text-xs">
+                        <i class="fa-solid fa-triangle-exclamation text-[10px]"></i>
+                    </div>
+                    <div class="p-3 rounded-2xl rounded-tl-none bg-rose-950/40 border border-rose-500/40 text-rose-300">
+                        Agent bilan bog'lanishda xatolik yuz berdi.
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    // -------------------------------------------------------------
+    // Follow-up Reminders Manager
+    // -------------------------------------------------------------
+    async function loadReminders() {
+        try {
+            const res = await fetch('/api/reminders');
+            const data = await res.json();
+            const container = document.getElementById('sidebarReminders');
+            const activeReminders = data.filter(r => !r.is_completed);
+
+            if (activeReminders.length === 0) {
+                container.innerHTML = `
+                    <div class="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 text-slate-500 text-[11px] italic text-center">
+                        Faol eslatmalar mavjud emas
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = activeReminders.slice(0, 4).map(r => `
+                <div class="p-2 rounded-xl bg-slate-800/50 border border-slate-700/60 flex items-center justify-between gap-2 transition hover:bg-slate-800/80">
+                    <div class="overflow-hidden flex-1">
+                        <p class="font-semibold text-slate-200 text-xs truncate">${r.reminder_text}</p>
+                        <p class="text-[10px] text-indigo-400 font-mono mt-0.5">🕒 ${r.remind_at}</p>
+                    </div>
+                    <button onclick="completeReminder(${r.id})" class="text-slate-400 hover:text-emerald-400 p-1 transition" title="Bajarildi deb belgilash">
+                        <i class="fa-regular fa-circle-check text-sm"></i>
+                    </button>
+                </div>
+            `).join('');
+        } catch (err) {
+            console.error("loadReminders error:", err);
+        }
+    }
+
+    async function completeReminder(id) {
+        try {
+            await fetch(`/api/reminders/${id}/complete`, { method: 'POST' });
+            showToast('Eslatma bajarildi deb belgilandi!', 'success');
+            loadReminders();
+        } catch (e) {
+            showToast('Eslatmani yangilashda xatolik', 'error');
+        }
+    }
+
+    function openReminderModal() {
+        document.getElementById('reminderModal').classList.remove('hidden');
+    }
+
+    function closeReminderModal() {
+        document.getElementById('reminderModal').classList.add('hidden');
+    }
+
+    function openReminderForCurrentEmail() {
+        if (!currentEmailId) return;
+        const sub = document.getElementById('detailSubject').innerText;
+        document.getElementById('remText').value = `Javob yozish: ${sub.slice(0, 32)}...`;
+        openReminderModal();
+    }
+
+    async function handleCreateReminder(e) {
+        e.preventDefault();
+        const payload = {
+            email_id: currentEmailId,
+            reminder_text: document.getElementById('remText').value,
+            hours_from_now: parseInt(document.getElementById('remHours').value)
+        };
+        try {
+            const res = await fetch('/api/reminders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                showToast('Follow-up eslatma muvaffaqiyatli saqlandi!', 'success');
+                closeReminderModal();
+                loadReminders();
+            }
+        } catch (err) {
+            showToast('Eslatma saqlashda xatolik', 'error');
+        }
+    }
+
+    // -------------------------------------------------------------
+    // Connect Account Modal Manager
+    // -------------------------------------------------------------
+    function openConnectModal() {
+        const errBox = document.getElementById('connectErrorBox');
+        if (errBox) errBox.classList.add('hidden');
+        document.getElementById('connectModal').classList.remove('hidden');
+    }
+
+    function closeConnectModal() {
+        document.getElementById('connectModal').classList.add('hidden');
+    }
+
+    function selectProviderPreset(preset) {
+        document.querySelectorAll('.provider-pill').forEach(p => {
+            p.className = 'provider-pill p-2 rounded-xl border border-slate-800 bg-slate-950 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 hover:border-slate-700 transition-all';
+        });
+
+        if (preset === 'gmail') {
+            document.getElementById('presetGmail').className = 'provider-pill p-2 rounded-xl border border-indigo-500 bg-indigo-500/10 text-indigo-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all';
+            document.getElementById('accImapHost').value = 'imap.gmail.com';
+            document.getElementById('accImapPort').value = 993;
+            document.getElementById('accSmtpHost').value = 'smtp.gmail.com';
+            document.getElementById('accSmtpPort').value = 465;
+        } else if (preset === 'outlook') {
+            document.getElementById('presetOutlook').className = 'provider-pill p-2 rounded-xl border border-indigo-500 bg-indigo-500/10 text-indigo-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all';
+            document.getElementById('accImapHost').value = 'outlook.office365.com';
+            document.getElementById('accImapPort').value = 993;
+            document.getElementById('accSmtpHost').value = 'smtp.office365.com';
+            document.getElementById('accSmtpPort').value = 587;
+        } else if (preset === 'yahoo') {
+            document.getElementById('presetYahoo').className = 'provider-pill p-2 rounded-xl border border-indigo-500 bg-indigo-500/10 text-indigo-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all';
+            document.getElementById('accImapHost').value = 'imap.mail.yahoo.com';
+            document.getElementById('accImapPort').value = 993;
+            document.getElementById('accSmtpHost').value = 'smtp.mail.yahoo.com';
+            document.getElementById('accSmtpPort').value = 465;
+        } else {
+            document.getElementById('presetCustom').className = 'provider-pill p-2 rounded-xl border border-indigo-500 bg-indigo-500/10 text-indigo-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all';
+        }
+    }
+
+    function autoFillUsername(val) {
+        const u = document.getElementById('accUsername');
+        if (!u.value || u.dataset.autofilled === 'true') {
+            u.value = val;
+            u.dataset.autofilled = 'true';
+        }
+    }
+
+    function togglePasswordVisibility() {
+        const inp = document.getElementById('accPassword');
+        const icon = document.getElementById('pwdEyeIcon');
+        if (inp.type === 'password') {
+            inp.type = 'text';
+            icon.className = 'fa-regular fa-eye-slash';
+        } else {
+            inp.type = 'password';
+            icon.className = 'fa-regular fa-eye';
+        }
+    }
+
+    async function submitConnectForm(forceSkipVerify = false) {
+        const btn = document.getElementById('connectSubmitBtn');
+        const errBox = document.getElementById('connectErrorBox');
+        const errText = document.getElementById('connectErrorText');
+        const forceSaveContainer = document.getElementById('forceSaveContainer');
+        const skipVerifyCheckbox = document.getElementById('accSkipVerify');
+
+        if (errBox) errBox.classList.add('hidden');
+        if (forceSaveContainer) forceSaveContainer.classList.add('hidden');
+
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Tekshirilmoqda...`;
+
+        const emailVal = document.getElementById('accEmail').value.trim();
+        const pwdVal = document.getElementById('accPassword').value.trim();
+        const imapHostVal = document.getElementById('accImapHost').value.trim();
+
+        const cleanPassword = (imapHostVal.toLowerCase().includes('gmail') || pwdVal.replace(/\s+/g, '').length === 16)
+            ? pwdVal.replace(/\s+/g, '')
+            : pwdVal;
+
+        const payload = {
+            email_address: emailVal,
+            imap_host: imapHostVal,
+            imap_port: parseInt(document.getElementById('accImapPort').value),
+            smtp_host: document.getElementById('accSmtpHost').value.trim(),
+            smtp_port: parseInt(document.getElementById('accSmtpPort').value),
+            username: document.getElementById('accUsername').value.trim() || emailVal,
+            password: cleanPassword,
+            skip_verify: forceSkipVerify || (skipVerifyCheckbox ? skipVerifyCheckbox.checked : false)
+        };
+
+        try {
+            const res = await fetch('/api/accounts/connect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showToast(data.message, 'success');
+                closeConnectModal();
+                loadAccounts();
+                loadEmails();
+            } else {
+                if (errBox && errText) {
+                    errBox.classList.remove('hidden');
+                    errText.innerText = data.detail || 'Ulanishda xatolik yuz berdi.';
+                    if (data.detail && (data.detail.toLowerCase().includes('timeout') || data.detail.toLowerCase().includes('port') || data.detail.toLowerCase().includes('eof') || data.detail.toLowerCase().includes('vaqti'))) {
+                        if (forceSaveContainer) forceSaveContainer.classList.remove('hidden');
+                    }
+                }
+                showToast(data.detail ? data.detail.split('\n')[0] : 'Ulanishda xatolik', 'error');
+            }
+        } catch (err) {
+            if (errBox && errText) {
+                errBox.classList.remove('hidden');
+                errText.innerText = 'Server bilan bog\'lanishda tarmoq xatosi.';
+            }
+            showToast('Server bilan bog\'lanishda xatolik', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-link"></i> <span>Ulash va Sinxronlash</span>`;
+        }
+    }
+
+    async function handleAccountConnect(e) {
+        e.preventDefault();
+        await submitConnectForm(false);
+    }
+
+    // -------------------------------------------------------------
+    // Manual Sync & Demo Seeding
+    // -------------------------------------------------------------
+    async function triggerManualSync() {
+        const sidebarSyncIcon = document.getElementById("sidebarSyncIcon");
+        if (sidebarSyncIcon) sidebarSyncIcon.classList.add("fa-spin");
+
+        showToast("Email sinxronizatsiyasi boshlandi...", "info");
+        try {
+            const res = await fetch("/api/accounts/sync", { method: "POST" });
+            const data = await res.json();
+            if (data.success) {
+                if (data.synced_count > 0) {
+                    showToast(`Sinxronizatsiya muvaffaqiyatli! ${data.synced_count} ta yangi xat yuklandi va AI tahlil qilindi.`, "success");
+                } else {
+                    showToast("Pochta tekshirildi. Yangi xatlar mavjud emas.", "success");
+                }
+                await loadEmails();
+                await loadAccounts();
+            } else {
+                showToast("Sinxronizatsiya xatosi: " + (data.detail || "Noma'lum xatolik"), "error");
+            }
+        } catch (e) {
+            showToast("Server bilan bog'lanishda xatolik", "error");
+        } finally {
+            if (sidebarSyncIcon) sidebarSyncIcon.classList.remove("fa-spin");
+        }
+    }
+
+    async function seedDemoEmails() {
+        showToast("Demo xabarlar tahlil qilinmoqda va yuklanmoqda...", "info");
+        try {
+            const res = await fetch('/api/seed-demo', { method: 'POST' });
+            const data = await res.json();
+            showToast('6 ta realistik demo xat muvaffaqiyatli yuklandi!', 'success');
+            await loadEmails();
+            await loadAccounts();
+        } catch (err) {
+            showToast('Demo yuklashda xatolik', 'error');
+        }
+    }
+</script>
+{% endblock %}
